@@ -260,6 +260,20 @@ $A(\theta_A)$ is invariant to the choice of $\varphi_1, \dots, \varphi_N$.
 For simplicity, we choose $\varphi_1 = \dots = \varphi_N = 1$ in our parameterization,
 since $S(1, \dots, 1) = I$.
 
+\subsection{Normalization}
+
+Note that Lipschitz control can be obtained through the use of layers of the form
+\begin{align}
+  \sigma(A x + b),
+\end{align}
+%
+where $\|A\|_2 \le L$.
+However, we have the bound
+$\|A\|_2 \le \sqrt{\|A\|_{\infty} \|A\|_1}$ and therefore we can use the parameterization
+\begin{align}
+  A = L \frac{B}{\max(1,\, \sqrt{\|B\|_{\infty} \|B\|_1})}.
+\end{align}
+
 \bibliographystyle{plain}
 \bibliography{bib}
 
