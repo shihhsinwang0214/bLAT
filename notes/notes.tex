@@ -1,0 +1,267 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1.25in]{geometry}
+
+\usepackage{calc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{multicol}
+\newcommand{\bogus}[1]{}
+
+\usepackage[hidelinks]{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows,positioning,calc}
+
+% title format and spacing
+\usepackage{titlesec}
+\titleformat{\section}{\normalsize\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\small\itshape}{\thesubsubsection}{1em}{}
+\titleformat{\paragraph}[runin]
+{\normalfont\small\itshape}{\theparagraph}{1em}{}
+\titleformat{\subparagraph}[runin]
+{\normalfont\small\itshape}{\thesubparagraph}{1em}{}
+\titlespacing*{\section} {0pt}{2ex}{0.5ex}
+% \titlespacing*{\bibliography} {0pt}{2ex}{0.5ex}
+\titlespacing*{\subsection} {0pt}{1.5ex}{0.5ex}
+% \titlespacing*{\paragraph} {0pt}{*0}{1em}
+% %\titlespacing*{\paragraph} {0pt}{3.25ex plus 1ex minus .2ex}{1em}
+% \titlespacing*{\subparagraph} {\parindent}{*0}{1em}
+% %\titlespacing*{\subparagraph} {\parindent}{3.25ex plus 1ex minus .2ex}{1em}
+
+\input texFiles/defs
+
+\usepackage{amsthm}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\begin{document}
+
+
+\section{bLAT Layer}
+{\definition 
+The bi-Lipschitz affine transformation (bLAT) layer 
+is given by the transformation, $f:\mathbb{R}^{N}\rightarrow\mathbb{R}^{M}$,
+defined by
+\begin{align}
+f(x) = U \Sigma V^{\rm T} x + b,
+\end{align}
+%
+where 
+$U\in\mathbb{R}^{M\times r}$,
+$V\in\mathbb{R}^{r\times N}$,
+$\Sigma\in\mathbb{R}^{r\times r}$,
+$b\in\mathbb{R}^{M}$,
+$r = \min(M, N)$,
+$U$ and $V$ are orthogonal matrices satisfying 
+$U^{\rm T} U = V^{\rm T} V = I$,
+and 
+\begin{align}
+    \Sigma = {\rm diag}
+    \left[\begin{array}{ccc} \sigma_1 & \dots & \sigma_r\end{array}\right],
+\end{align}
+%
+where $\frac{1}{L} \le \sigma_i \le L$ for 
+$i=1,\dots, r$ and some $L\ge 1$.
+When $M=N$, the mapping is invertible.\label{def:blat}
+\begin{align}
+    f^{-1}(x) = V \Sigma^{-1} U^{\rm T} (x - b).
+\end{align}
+}
+
+\medskip
+
+\noindent Our new contribution is to include the
+matrix term $U\Sigma V^T$, which is written as a 
+singular value decomposition (SVD),
+which exists for every matrix in $\mathbb{R}^{M\times N}$.
+One advantage of the bLAT layer is the following theorem.
+
+{\theorem The forward and 
+inverse bLAT layers are both $L$-bi-Lipschitz.
+}
+
+\medskip
+
+\noindent This follows from the fact that
+$\frac{1}{L} \le \|\grad f(x)\|_2 \le L$ and 
+$\frac{1}{L} \le \|\grad f^{-1}(x)\|_2 \le L$.
+Another advantage of using the SVD is that,
+by construction, the evaluation of 
+$f(x)$ and $f^{-1}(x)$ have an equivalent computational cost.
+In our implementation of the $M=N$ case,
+the orthogonal matrices of the 
+bLAT layers are parameterized using the matrix exponential 
+of a skew-symmetric matrix input,
+i.e. $U = {\rm expm}(S)$, where $S=-S^T$.
+When $M\ne N$, the orthogonal matrices are parameterized
+using the Householder factorization.
+
+\section{Orthogonal/Unitary Parameterizations}
+
+\subsection{Matrix Exponential}
+
+Let $S\in\mathbb{C}^{M\times M}$ be a skew symmetric matrix ($S=-S^T$), then
+\begin{align}
+  U = {\rm expm}(S)
+\end{align}
+%
+is unitary. (Note: when $S\in\mathbb{R}^{M\times M}$, then $U$ is orthogonal.)
+
+\subsection{Householder}
+
+The notes in this section were originally written to help with implementation of code.
+Consider an orthogonal matrix $Q\in\mathbb{R}^{n\times n}$. The Householder decomposition is defined by
+\begin{align}
+Q &= Q_n \dots Q_1, \\
+Q^T &= Q_1^T \dots Q_n^T = Q_1 \dots Q_n,
+\end{align}
+%
+Where $Q_1, \dots, Q_n$ are symmetric elementary orthogonal matrices defined by
+\begin{align}
+Q_k = \left[\begin{array}{cc}
+I_{N-k \times N-k}&0\\0&F_k
+\end{array}\right], \qquad
+F_k = I_{k\times k} - 2 \frac{v_k v_k^T}{v_k^T v_k},
+\qquad
+v_k\in\mathbb{R}^{k}.
+\end{align}
+%
+We can also define $Q_k$ using
+\begin{align}
+    Q_k = \tilde{F}_k = I_{N\times N} 
+    - 2 \frac{\tilde{v}_k \tilde{v}_k^T}{\tilde{v}_k^T \tilde{v}_k},
+    \qquad
+    \tilde{v}_k = \left[\begin{array}{c}0\\v_k\end{array}\right] \in \mathbb{R}^N.
+\end{align}
+%
+Note that $Q_k$ is symmetric.
+\begin{align}
+    \tilde{F}_k^T = I_{N\times N} 
+    - 2 \frac{\tilde{v}_k \tilde{v}_k^T}{\tilde{v}_k^T \tilde{v}_k}
+\end{align}
+%
+Matrix action of $Q_k$:
+\begin{align}
+    Q_k y =  y
+    - 2 \frac{\tilde{v}_k \tilde{v}_k^T}{\tilde{v}_k^T \tilde{v}_k} y,
+\end{align}
+%
+Consider $y\in\mathbb{R}^M$ $Q\in\mathbb{R}^{M\times N}$,
+$\tilde{v}_k\in\mathbb{R}^N$, then
+\begin{align}
+    y^T Q_k =  y^T
+    - 2 \frac{ \tilde{v}_k^T}{\tilde{v}_k^T \tilde{v}_k} (y^T \tilde{v}_k).
+\end{align}
+%
+
+\subsection{Polcari}
+
+Orthogonal matrices can be parameterized using the
+Polcari decomposition, which was originally introduced in~\cite{polcari}.
+Given an orthogonal matrix, $Q\in\mathbb{R}^{N\times N}$,
+then $Q$ can be decomposed as
+\begin{align}
+  Q = \Psi(w_{N-1}) \hdots \Psi(w_1) S(\varphi_1, \dots, \varphi_N),
+  \label{eq:polcarisigned}
+\end{align}
+where $w_j \in \{x: x\in \mathbb{R}^{j},\, \|x\|_2 \le 1\}$, for $j=1,\dots,N-1$,
+and $\varphi_1, \dots, \varphi_N \in \{1, -1 \}$, and 
+\begin{align*}
+  &\Psi(w_j) = 
+  \left[\begin{array}{ccc}
+          {\rm I}_{j} - \frac{w_j w_j^{\rm T}}{1 + \sqrt{1 - w_j^{\rm T} w_j}} & w_j & \\
+          - w_j^{\rm T} & \sqrt{1 - w_j^{\rm T} w_j} & \\
+                                                             && {\rm I}_{N-j-1}
+        \end{array}\right], \qquad i=1, \dots, N-1, \\
+  &S(\varphi_1, \dots, \varphi_N) = \left[\begin{array}{ccc}
+                                            \varphi_1 \\
+                                           & \ddots \\
+                                           && \varphi_N
+                                         \end{array}\right].
+\end{align*}
+%
+Here, ${\rm I}_d$ represents a $d \times d$ identity matrix.
+Note that a vector, $v_j \in \mathbb{R}^i$, can be projected inside the unit ball,
+$w_j \in \{x: x\in \mathbb{R}^{j},\, \|x\|_2 \le 1\}$, using a transformation such as
+\begin{align*}
+  w_j = \rho_j \frac{v_j}{\|v_j\|}, \qquad \rho_j = {\rm tanh}(\|v_j\|) \in [0, 1].
+\end{align*}
+%
+
+The decomposition in~\eqref{eq:polcarisigned} can be used as a parameterization
+to express any orthogonal matrix. Given an orthogonal matrix, $Q\in\mathbb{R}^{N\times N}$,
+the parameters of the Polcari decomposition can be uniquely determined.
+Consider the following properties.
+\begin{enumerate}
+\item $\Psi(w_j)$ for $j=1,\dots, N-1$ and $S$ are orthogonal matrices and therefore, by construction,
+  the right-hand-side of~\eqref{eq:polcarisigned} is orthogonal. 
+\item $\Psi(w_j) {\rm e}_k = {\rm e}_k$ for $k>j+1$,
+  where ${\rm e}_k$ is a vector with a $1$ in the $k^{\rm th}$ component and $0$'s elsewhere.
+\item ${\rm P}_{(k-1) N}\Psi(w_{k-1}) {\rm e}_{k} = w_{k-1}$, for $k=2,\dots N$,
+  where ${\rm P}_{(k-1) N}$ is an identity matrix of size $(k-1) \times N$.
+\item ${\rm e}_{k}^T\Psi(w_{k-1}) {\rm e}_{k} = \sqrt{1-w_{k-1}^{\rm T} w_{k-1}}$, for $k=2,\dots N$.
+  % \item If $U$ is unitary and $u_i \defeq U {\rm e}_i$ is the $i^{\rm th}$ column of $U$, $u_i^{\rm T}u_i = 1$.
+\item ${\rm P}_{(k-1)N} \Psi(w_{k-1}) \dots \Psi(w_1) S {\rm e}_k = \varphi_k w_{k-1}$,
+  for $k=2,\dots N$. This follows from (2) and (3).
+\item ${\rm e}_{k}^T \Psi(w_{k-1}) \dots \Psi(w_1) S {\rm e}_k = \varphi_k \sqrt{1 - w_{k-1}^{\rm T} w_{k-1}}$
+  for $k=2,\dots N$. This follows from (2) and (4).
+\end{enumerate}
+%
+% The parameters, $w_1, \dots w_{N-1}$ and $\varphi_1, \dots \varphi_N$,
+% in~\eqref{eq:polcarisigned} can be determined uniquely to represent
+% an arbitrary unitary matrix, $Q \in \mathbb{R}^{N \times N}$.
+% Let the $j^{\rm}$ column vector be denoted by $q_j$ and let the element in row $i$ and column $j$ be denoted as
+% $q_{ij}$.
+Using properties (5) and (6) for $k=N$, we have
+\begin{align*}
+  P_{N-1,N}Q {\rm e}_N = \varphi_{N} w_{N-1}, \qquad {\rm e}_N^{\rm T} Q {\rm e}_N = \varphi_N \sqrt{1 - w_{N-1}^{\rm T} w_{N-1}},
+\end{align*}
+%
+and therefore 
+\begin{align*}
+  w_{N-1} = \varphi_N P_{N-1,N}Q {\rm e}_N, \qquad \varphi_N = {\rm sign}\left({\rm e}_N^{\rm T} Q {\rm e}_N \right).
+\end{align*}
+%
+Suppose that $w_{k}, \dots w_{N-1}$ is known. We can obtain relations for
+$w_{k-1}$ and $\varphi_k$ using properties (5) and (6).
+\begin{align*}
+  {\rm P}_{(k-1)N} \Psi(w_{k})^{\rm T} \dots \Psi(w_{N-1})^{\rm T} Q {\rm e}_k
+  % = {\rm P}_{(k-1)N} \Psi(w_{k-1}) \dots \Psi(w_1) S {\rm e}_k
+  &= \varphi_k w_{k-1}, \\
+  {\rm e}_k^{\rm T} \Psi(w_{k})^{\rm T} \dots \Psi(w_{N-1})^{\rm T} Q {\rm e}_k
+  % = {\rm e}_k^{\rm T} \Psi(w_{k-1}) \dots \Psi(w_1) S {\rm e}_k
+  &= \varphi_k \sqrt{1 - w_{k-1}^{\rm T} w_{k-1}}.
+\end{align*}
+%
+Using this, general relations for $w_k$ and $\varphi_k$ for all $k$ can be obtained.
+\bse
+\begin{alignat}{2}
+  w_{k} &= \varphi_{k+1} {\rm P}_{k,N} \Psi(w_{k+1})^{\rm T} \dots \Psi(w_{N-1})^{\rm T} Q {\rm e}_{k+1},
+            \qquad &&k=1, \dots, N-1,\\
+  \varphi_k &= {\rm sign}\left({\rm e}_k^{\rm T} \Psi(w_{k})^{\rm T} \dots \Psi(w_{N-1})^{\rm T} Q {\rm e}_k\right) ,
+              \qquad &&k=1, \dots, N.
+\end{alignat}\label{eq:polcariDetermine}
+\ese
+%
+An algorithm for determining the Polcari parameters would use~\eqref{eq:polcariDetermine}
+recursively, decrementing $k$ from $N$ to $1$.
+Since the Polcari parameters can be uniquely determined, the following theorem can be stated.
+
+{\theorem The decomposition given by~\eqref{eq:polcarisigned}
+  is a parameterization for any orthogonal matrix in $\mathbb{R}^{N \times N}$.
+  %This mapping involves $\frac{1}{2} N(N+1)$ real parameters.
+  % \das{which is precisely the number of parameters
+  % required to represent an arbitrary unitary matrix}.
+}
+
+\medskip
+
+Note that since $S(\varphi_1, \dots, \varphi_N) U S(\varphi_1, \dots, \varphi_N)^T = U$,
+$A(\theta_A)$ is invariant to the choice of $\varphi_1, \dots, \varphi_N$.
+For simplicity, we choose $\varphi_1 = \dots = \varphi_N = 1$ in our parameterization,
+since $S(1, \dots, 1) = I$.
+
+\bibliographystyle{plain}
+\bibliography{bib}
+
+
+\end{document}
